@@ -29,7 +29,7 @@ $("#btnRegister").onclick = async () => {
     body: JSON.stringify({email, password})
   });
   const data = await r.json();
-  alert(data.msg || data.error || "Registered");
+  alert(data.message || data.error || "Registered");
 }
 
 $("#btnLogin").onclick = async () => {
@@ -40,11 +40,12 @@ $("#btnLogin").onclick = async () => {
     body: JSON.stringify({email, password})
   });
   const data = await r.json();
-  if(data.token){
-    token = data.token;
-    is_premium = data.is_premium;
+
+  if(r.status === 200){
+    // No token returned now, just mark as logged in
+    token = "logged-in"; 
     $("#status").textContent = "Logged in";
-    alert("Logged in");
+    alert(data.message || "Login successful");
   } else {
     alert(data.error || "Login failed");
   }
@@ -90,8 +91,7 @@ async function saveFavorite(rp){
   const r = await fetch("/api/favorites/add", {
     method:"POST",
     headers:{
-      "Content-Type":"application/json",
-      "Authorization":`Bearer ${token}`
+      "Content-Type":"application/json"
     },
     body: JSON.stringify(payload)
   });
@@ -103,9 +103,7 @@ async function saveFavorite(rp){
 // Load favorites
 $("#btnLoadFavs").onclick = async () => {
   if(!token) return alert("Please login");
-  const r = await fetch("/api/favorites/list", {
-    headers:{"Authorization":`Bearer ${token}`}
-  });
+  const r = await fetch("/api/favorites/list");
   const data = await r.json();
   $("#favList").innerHTML = "";
   data.forEach(f => {
@@ -153,8 +151,7 @@ tabs.premium.onclick = async () => {
   const r = await fetch("/api/premium/recipes", {
     method:"POST",
     headers:{
-      "Content-Type":"application/json",
-      "Authorization":`Bearer ${token}`
+      "Content-Type":"application/json"
     },
     body: JSON.stringify({ingredients, number:3})
   });
