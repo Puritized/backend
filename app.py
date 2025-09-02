@@ -35,44 +35,44 @@ def generate_recipe(ingredients):
 def create_app():
     app = Flask(__name__, static_folder="static", static_url_path="/")
 
-    # App configuration
+    # === App Config ===
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "jwt-secret")
 
-    # Initialize extensions
+    # === Initialize Extensions ===
     db.init_app(app)
     jwt.init_app(app)
 
-    # Import models AFTER db is initialized
-    from models import User, Favorite  
+    # === Import models AFTER db init ===
+    from models import User, Favorite, Payment
 
-    # Import blueprints
+    # === Import blueprints ===
     from routes_auth import auth_bp
     from routes_recipes import recipes_bp
-    from routes_payments import payments_bp   # Paystack payments
+    from routes_payments import payments_bp   # Paystack
     from routes_favorites import favorites_bp
 
-    # Register blueprints
+    # === Register blueprints ===
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(recipes_bp, url_prefix="/api/recipes")
-    app.register_blueprint(payments_bp, url_prefix="/api/payments")  # Paystack
+    app.register_blueprint(payments_bp, url_prefix="/api/payments")
     app.register_blueprint(favorites_bp, url_prefix="/api/favorites")
 
-    # Serve frontend
+    # === Serve frontend ===
     @app.route("/")
     def index():
         return send_from_directory(app.static_folder, "index.html")
 
-    # Auto-create tables (not for production migrations)
+    # === Auto-create tables (development only) ===
     with app.app_context():
         db.create_all()
 
     return app
 
 
-# Entry point for Gunicorn & local dev
+# === Entry point for Gunicorn & local dev ===
 app = create_app()
 
 if __name__ == "__main__":
