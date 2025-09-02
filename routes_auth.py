@@ -1,8 +1,16 @@
 from flask import Blueprint, request, jsonify
-from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, User
+import hashlib
 
 auth_bp = Blueprint("auth", __name__)
+
+# ---------------------------
+# Helper: Hash Password
+# ---------------------------
+def hash_password(password: str) -> str:
+    """Hash a password using SHA-256."""
+    return hashlib.sha256(password.encode()).hexdigest()
+
 
 # ---------------------------
 # Register Route
@@ -19,8 +27,8 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "User already exists"}), 400
 
-    # Force pbkdf2:sha256 (portable across Werkzeug versions)
-    hashed_pw = generate_password_hash(password, method="pbkdf2:sha256")
+    # Use SHA-256 hash instead of Werkzeug
+    hashed_pw = hash_password(password)
 
     user = User(email=email, password_hash=hashed_pw)
     db.session.add(user)
@@ -39,7 +47,9 @@ def login():
     password = data.get("password")
 
     user = User.query.filter_by(email=email).first()
-    if user and check_password_hash(user.password_hash, password):
+
+    # Compare SHA-256 hashes
+    if user and user.password_hash == hash_password(password):
         return jsonify({"message": "Login successful"}), 200
 
     return jsonify({"error": "Invalid credentials"}), 401
