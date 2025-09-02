@@ -9,11 +9,10 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    password_hash = db.Column(db.String(500), nullable=False)
-    is_premium = db.Column(db.Boolean, default=False)  # Premium flag
+    password_hash = db.Column(db.String(64), nullable=False)  # SHA-256 hash
+    is_premium = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationship: one user -> many favorites
     favorites = db.relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -32,23 +31,22 @@ class Favorite(db.Model):
     instructions = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationship back to User
     user = db.relationship("User", back_populates="favorites")
 
     def __repr__(self):
         return f"<Favorite {self.recipe_name} by User {self.user_id}>"
 
 # ---------------------------
-# Payment / Subscription Tracking (Optional, good for debugging)
+# Payment / Subscription Tracking
 # ---------------------------
 class Payment(db.Model):
     __tablename__ = "payments"
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    reference = db.Column(db.String(255), unique=True, nullable=False)  # Paystack reference
-    amount = db.Column(db.Integer, nullable=False)  # Stored in kobo
-    status = db.Column(db.String(50), default="pending")  # pending, success, failed
+    reference = db.Column(db.String(255), unique=True, nullable=False)
+    amount = db.Column(db.Integer, nullable=False)  # kobo
+    status = db.Column(db.String(50), default="pending")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship("User", backref="payments")
