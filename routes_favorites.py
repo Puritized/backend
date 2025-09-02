@@ -1,22 +1,32 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, Favorite, User
+from models import db, Favorite
 
-favorites_bp = Blueprint("favorites", __name__)
+favorites_bp = Blueprint("favorites", __name__, url_prefix="/api/favorites")
 
-# === Save a favorite recipe ===
+# ---------------------------
+# Test Route (for debugging)
+# ---------------------------
+@favorites_bp.route("/test", methods=["GET"])
+def test_favorites():
+    return jsonify({"message": "Favorites routes working"}), 200
+
+
+# ---------------------------
+# Save a favorite recipe
+# ---------------------------
 @favorites_bp.route("/", methods=["POST"])
 @jwt_required()
 def add_favorite():
     user_id = get_jwt_identity()
-    data = request.json
+    data = request.get_json() or {}
 
     recipe_name = data.get("recipe_name")
     ingredients = data.get("ingredients")
     instructions = data.get("instructions")
 
     if not recipe_name or not ingredients or not instructions:
-        return jsonify({"error": "Missing recipe details"}), 400
+        return jsonify({"error": "Recipe name, ingredients, and instructions are required"}), 400
 
     favorite = Favorite(
         user_id=user_id,
@@ -30,12 +40,17 @@ def add_favorite():
     return jsonify({"message": "Recipe saved to favorites"}), 201
 
 
-# === Get all favorites for the logged-in user ===
+# ---------------------------
+# Get all favorites for the logged-in user
+# ---------------------------
 @favorites_bp.route("/", methods=["GET"])
 @jwt_required()
 def get_favorites():
     user_id = get_jwt_identity()
     favorites = Favorite.query.filter_by(user_id=user_id).all()
+
+    if not favorites:
+        return jsonify({"message": "No favorites found"}), 200
 
     result = [
         {
@@ -50,7 +65,9 @@ def get_favorites():
     return jsonify(result), 200
 
 
-# === Delete a favorite by ID ===
+# ---------------------------
+# Delete a favorite by ID
+# ---------------------------
 @favorites_bp.route("/<int:favorite_id>", methods=["DELETE"])
 @jwt_required()
 def delete_favorite(favorite_id):
