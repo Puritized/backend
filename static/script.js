@@ -43,7 +43,7 @@ $("#btnLogin").onclick = async () => {
 
   if(r.status === 200 && data.access_token){
     token = data.access_token; 
-    localStorage.setItem("token", token); // 🔑 persist token
+    localStorage.setItem("token", token); //  persist token
     $("#status").textContent = "Logged in";
     alert(data.message || "Login successful");
   } else {
@@ -118,7 +118,7 @@ async function saveFavorite(rp){
       method:"POST",
       headers:{
         "Content-Type":"application/json",
-        "Authorization": `Bearer ${token}` // 🔑 include JWT
+        "Authorization": `Bearer ${token}` // include JWT
       },
       body: JSON.stringify(payload)
     });
@@ -142,7 +142,7 @@ $("#btnLoadFavs").onclick = async () => {
   if(!token) return alert("Please login");
   const r = await fetch("/api/favorites/", {
     headers: {
-      "Authorization": `Bearer ${token}` // 🔑 include JWT
+      "Authorization": `Bearer ${token}` // include JWT
     }
   });
   const data = await r.json();
@@ -193,10 +193,28 @@ tabs.premium.onclick = async () => {
     method:"POST",
     headers:{
       "Content-Type":"application/json",
-      "Authorization": `Bearer ${token}` // 🔑 include JWT
+      "Authorization": `Bearer ${token}` // include JWT
     },
     body: JSON.stringify({ingredients, number:3})
   });
   const data = await r.json();
   $("#premiumList").innerHTML = "";
-  if(data.recipes && da
+  if(data.recipes && data.recipes.length){
+    data.recipes.forEach(rp => {
+      const name = rp.name || "Untitled";
+      const ingredients = Array.isArray(rp.ingredients) ? rp.ingredients : (typeof rp.ingredients === "string" ? rp.ingredients.split(",") : []);
+      const instructions = rp.instructions || rp.steps || "";
+      const div = document.createElement("div");
+      div.className = "recipe-card";
+      div.innerHTML = `<h3>${name}</h3>
+                       <p><strong>Ingredients:</strong> ${ingredients.join(", ")}</p>
+                       <p>${instructions}</p>`;
+      $("#premiumList").appendChild(div);
+    });
+  } else {
+    $("#premiumList").innerHTML = "No premium recipes available.";
+  }
+}
+
+// set initial tab
+switchTab("home");
