@@ -19,7 +19,9 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "User already exists"}), 400
 
-    hashed_pw = generate_password_hash(password)
+    # Force pbkdf2:sha256 (portable across Werkzeug versions)
+    hashed_pw = generate_password_hash(password, method="pbkdf2:sha256")
+
     user = User(email=email, password_hash=hashed_pw)
     db.session.add(user)
     db.session.commit()
