@@ -6,7 +6,7 @@ const $ = (s) => document.querySelector(s);
 // Tabs
 const tabs = { home: $("#tabHome"), recipes: $("#tabRecipes"), favorites: $("#tabFavorites"), premium: $("#tabPremium") };
 const views = { home: $("#homeView"), recipes: $("#recipesView"), favorites: $("#favoritesView"), premium: $("#premiumView") };
-let token = null;
+let token = localStorage.getItem("token") || null;
 let is_premium = false;
 
 function switchTab(tab){
@@ -41,9 +41,9 @@ $("#btnLogin").onclick = async () => {
   });
   const data = await r.json();
 
-  if(r.status === 200){
-    // No token returned now, just mark as logged in
-    token = "logged-in"; 
+  if(r.status === 200 && data.access_token){
+    token = data.access_token; 
+    localStorage.setItem("token", token); // 🔑 persist token
     $("#status").textContent = "Logged in";
     alert(data.message || "Login successful");
   } else {
@@ -60,7 +60,6 @@ $("#btnGetRecipes").onclick = async () => {
     const r = await fetch("/api/recipes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // always send ingredients as array
       body: JSON.stringify({ ingredients: ingredientsInput.split(",").map(i => i.trim()), number: 5 })
     });
 
@@ -74,12 +73,10 @@ $("#btnGetRecipes").onclick = async () => {
         let name, ingr, instructions;
 
         if (typeof rp === "string") {
-          // fallback plain text recipe
           name = "Generated Recipe";
           ingr = ingredientsInput.split(",").map(i => i.trim());
           instructions = rp;
         } else {
-          // structured recipe object
           name = rp.name || rp.title || rp.recipe_name || "Untitled";
           ingr = Array.isArray(rp.ingredients)
             ? rp.ingredients
@@ -107,7 +104,6 @@ $("#btnGetRecipes").onclick = async () => {
   }
 };
 
-
 async function saveFavorite(rp){
   if(!token) return alert("Please login to save favorites");
 
@@ -118,11 +114,11 @@ async function saveFavorite(rp){
       instructions: rp.instructions
     };
 
-    // 🔥 FIXED: call correct backend endpoint
     const r = await fetch("/api/favorites/", {
       method:"POST",
       headers:{
-        "Content-Type":"application/json"
+        "Content-Type":"application/json",
+        "Authorization": `Bearer ${token}` // 🔑 include JWT
       },
       body: JSON.stringify(payload)
     });
@@ -144,7 +140,11 @@ async function saveFavorite(rp){
 // Load favorites
 $("#btnLoadFavs").onclick = async () => {
   if(!token) return alert("Please login");
-  const r = await fetch("/api/favorites/");
+  const r = await fetch("/api/favorites/", {
+    headers: {
+      "Authorization": `Bearer ${token}` // 🔑 include JWT
+    }
+  });
   const data = await r.json();
   $("#favList").innerHTML = "";
   data.forEach(f => {
@@ -192,28 +192,11 @@ tabs.premium.onclick = async () => {
   const r = await fetch("/api/premium/recipes", {
     method:"POST",
     headers:{
-      "Content-Type":"application/json"
+      "Content-Type":"application/json",
+      "Authorization": `Bearer ${token}` // 🔑 include JWT
     },
     body: JSON.stringify({ingredients, number:3})
   });
   const data = await r.json();
   $("#premiumList").innerHTML = "";
-  if(data.recipes && data.recipes.length){
-    data.recipes.forEach(rp => {
-      const name = rp.name || "Untitled";
-      const ingredients = Array.isArray(rp.ingredients) ? rp.ingredients : (typeof rp.ingredients === "string" ? rp.ingredients.split(",") : []);
-      const instructions = rp.instructions || rp.steps || "";
-      const div = document.createElement("div");
-      div.className = "recipe-card";
-      div.innerHTML = `<h3>${name}</h3>
-                       <p><strong>Ingredients:</strong> ${ingredients.join(", ")}</p>
-                       <p>${instructions}</p>`;
-      $("#premiumList").appendChild(div);
-    });
-  } else {
-    $("#premiumList").innerHTML = "No premium recipes available.";
-  }
-}
-
-// set initial tab
-switchTab("home");
+  if(data.recipes && da
