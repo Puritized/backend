@@ -118,7 +118,8 @@ async function saveFavorite(rp){
       instructions: rp.instructions
     };
 
-    const r = await fetch("/api/favorites/add", {
+    // 🔥 FIXED: call correct backend endpoint
+    const r = await fetch("/api/favorites/", {
       method:"POST",
       headers:{
         "Content-Type":"application/json"
@@ -143,7 +144,7 @@ async function saveFavorite(rp){
 // Load favorites
 $("#btnLoadFavs").onclick = async () => {
   if(!token) return alert("Please login");
-  const r = await fetch("/api/favorites/list");
+  const r = await fetch("/api/favorites/");
   const data = await r.json();
   $("#favList").innerHTML = "";
   data.forEach(f => {
