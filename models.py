@@ -9,7 +9,7 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(500), nullable=False)
     is_premium = db.Column(db.Boolean, default=False)  # Premium flag
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
