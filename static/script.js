@@ -34,22 +34,31 @@ $("#btnRegister").onclick = async () => {
 
 $("#btnLogin").onclick = async () => {
   const email = $("#email").value, password = $("#password").value;
-  const r = await fetch("/api/auth/login", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({email, password})
-  });
-  const data = await r.json();
+  try {
+    const r = await fetch("/api/auth/login", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({email, password})
+    });
 
-  if(r.status === 200 && data.access_token){
-    token = data.access_token; 
-    localStorage.setItem("token", token); //  persist token
-    $("#status").textContent = "Logged in";
-    alert(data.message || "Login successful");
-  } else {
-    alert(data.error || "Login failed");
+    const data = await r.json();
+
+    if (r.ok) {
+      // some backends return access_token, some return token
+      token = data.access_token || data.token;
+      if (!token) throw new Error("No token returned by backend");
+
+      localStorage.setItem("token", token); 
+      $("#status").textContent = "Logged in";
+      alert(data.message || "Login successful");
+    } else {
+      throw new Error(data.error || "Login failed");
+    }
+  } catch (err) {
+    console.error("Login error:", err);
+    alert("Login failed: " + err.message);
   }
-}
+};
 
 // Get free recipes
 $("#btnGetRecipes").onclick = async () => {
