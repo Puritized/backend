@@ -53,33 +53,60 @@ $("#btnLogin").onclick = async () => {
 
 // Get free recipes
 $("#btnGetRecipes").onclick = async () => {
-  const ingredients = $("#ingredients").value;
+  const ingredientsInput = $("#ingredients").value;
   $("#recipesList").innerHTML = "Loading...";
-  const r = await fetch("/api/recipes", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ingredients, number:5})
-  });
-  const data = await r.json();
-  $("#recipesList").innerHTML = "";
-  if(data.recipes && data.recipes.length){
-    data.recipes.forEach(rp => {
-      const name = rp.name || rp.title || rp.recipe_name || "Untitled";
-      const ingredients = Array.isArray(rp.ingredients) ? rp.ingredients : (typeof rp.ingredients === "string" ? rp.ingredients.split(",") : []);
-      const instructions = rp.instructions || rp.steps || "";
-      const div = document.createElement("div");
-      div.className = "recipe-card";
-      div.innerHTML = `<h3>${name}</h3>
-                       <p><strong>Ingredients:</strong> ${ingredients.join(", ")}</p>
-                       <p><strong>Instructions:</strong> ${instructions}</p>
-                       <button class="save">Save</button>`;
-      div.querySelector(".save").onclick = () => saveFavorite({name, ingredients, instructions});
-      $("#recipesList").appendChild(div);
+
+  try {
+    const r = await fetch("/api/recipes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // always send ingredients as array
+      body: JSON.stringify({ ingredients: ingredientsInput.split(",").map(i => i.trim()), number: 5 })
     });
-  } else {
-    $("#recipesList").innerHTML = "No recipes found.";
+
+    if (!r.ok) throw new Error("Server error " + r.status);
+
+    const data = await r.json();
+    $("#recipesList").innerHTML = "";
+
+    if (data.recipes && data.recipes.length) {
+      data.recipes.forEach(rp => {
+        let name, ingr, instructions;
+
+        if (typeof rp === "string") {
+          // fallback plain text recipe
+          name = "Generated Recipe";
+          ingr = ingredientsInput.split(",").map(i => i.trim());
+          instructions = rp;
+        } else {
+          // structured recipe object
+          name = rp.name || rp.title || rp.recipe_name || "Untitled";
+          ingr = Array.isArray(rp.ingredients)
+            ? rp.ingredients
+            : (typeof rp.ingredients === "string"
+                ? rp.ingredients.split(",")
+                : []);
+          instructions = rp.instructions || rp.steps || "";
+        }
+
+        const div = document.createElement("div");
+        div.className = "recipe-card";
+        div.innerHTML = `<h3>${name}</h3>
+                         <p><strong>Ingredients:</strong> ${ingr.join(", ")}</p>
+                         <p><strong>Instructions:</strong> ${instructions}</p>
+                         <button class="save">Save</button>`;
+        div.querySelector(".save").onclick = () => saveFavorite({ name, ingredients: ingr, instructions });
+        $("#recipesList").appendChild(div);
+      });
+    } else {
+      $("#recipesList").innerHTML = "No recipes found.";
+    }
+  } catch (err) {
+    console.error("Error fetching recipes:", err);
+    $("#recipesList").innerHTML = " Could not load recipes. Try again.";
   }
-}
+};
+
 
 async function saveFavorite(rp){
   if(!token) return alert("Please login to save favorites");
