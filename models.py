@@ -1,6 +1,7 @@
 from datetime import datetime
 from app import db
 
+
 # ---------------------------
 # User Model
 # ---------------------------
@@ -13,10 +14,21 @@ class User(db.Model):
     is_premium = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    favorites = db.relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
+    # Relationships
+    favorites = db.relationship(
+        "Favorite",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    payments = db.relationship(
+        "Payment",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<User {self.email}, Premium={self.is_premium}>"
+
 
 # ---------------------------
 # Favorite Recipes Model
@@ -31,10 +43,12 @@ class Favorite(db.Model):
     instructions = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Relationship
     user = db.relationship("User", back_populates="favorites")
 
     def __repr__(self):
         return f"<Favorite {self.recipe_name} by User {self.user_id}>"
+
 
 # ---------------------------
 # Payment / Subscription Tracking
@@ -45,11 +59,12 @@ class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     reference = db.Column(db.String(255), unique=True, nullable=False)
-    amount = db.Column(db.Integer, nullable=False)  # kobo
+    amount = db.Column(db.Integer, nullable=False)  # stored in kobo
     status = db.Column(db.String(50), default="pending")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    user = db.relationship("User", backref="payments")
+    # Relationship
+    user = db.relationship("User", back_populates="payments")
 
     def __repr__(self):
         return f"<Payment {self.reference}, Status={self.status}>"
