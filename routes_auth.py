@@ -4,6 +4,9 @@ from models import db, User
 
 auth_bp = Blueprint("auth", __name__)
 
+# ---------------------------
+# Register Route
+# ---------------------------
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
@@ -24,6 +27,9 @@ def register():
     return jsonify({"message": "User registered successfully"}), 201
 
 
+# ---------------------------
+# Login Route
+# ---------------------------
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -33,4 +39,5 @@ def login():
     user = User.query.filter_by(email=email).first()
     if user and check_password_hash(user.password_hash, password):
         return jsonify({"message": "Login successful"}), 200
+
     return jsonify({"error": "Invalid credentials"}), 401
