@@ -51,13 +51,13 @@ def create_app():
     # Import blueprints
     from routes_auth import auth_bp
     from routes_recipes import recipes_bp
-    from routes_payments import payments_bp
-    from routes_favorites import favorites_bp   # new favorites routes
+    from routes_payments import payments_bp   # Paystack payments
+    from routes_favorites import favorites_bp
 
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(recipes_bp, url_prefix="/api/recipes")
-    app.register_blueprint(payments_bp, url_prefix="/api/payments")
+    app.register_blueprint(payments_bp, url_prefix="/api/payments")  # Paystack
     app.register_blueprint(favorites_bp, url_prefix="/api/favorites")
 
     # Serve frontend
@@ -72,7 +72,7 @@ def create_app():
     return app
 
 
-# Entry point for Gunicorn
+# Entry point for Gunicorn & local dev
 app = create_app()
 
 if __name__ == "__main__":
