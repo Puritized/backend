@@ -110,21 +110,34 @@ $("#btnGetRecipes").onclick = async () => {
 
 async function saveFavorite(rp){
   if(!token) return alert("Please login to save favorites");
-  const payload = {
-    recipe_name: rp.name,
-    ingredients: rp.ingredients,
-    instructions: rp.instructions
-  };
-  const r = await fetch("/api/favorites/add", {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  const data = await r.json();
-  if(r.status===201) alert("Saved to favorites");
-  else alert(data.error || "Failed");
+
+  try {
+    const payload = {
+      recipe_name: rp.name,
+      ingredients: rp.ingredients,
+      instructions: rp.instructions
+    };
+
+    const r = await fetch("/api/favorites/add", {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!r.ok) {
+      const errorData = await r.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed with ${r.status}`);
+    }
+
+    const data = await r.json();
+    alert(data.message || "Saved to favorites");
+
+  } catch (err) {
+    console.error("Error saving favorite:", err);
+    alert(" Could not save favorite: " + err.message);
+  }
 }
 
 // Load favorites
