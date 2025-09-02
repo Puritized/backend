@@ -16,6 +16,7 @@ def test_favorites():
 # Save a favorite recipe
 # ---------------------------
 @favorites_bp.route("/", methods=["POST"])
+@favorites_bp.route("/add", methods=["POST"])   # <-- allow /api/favorites/add too
 @jwt_required()
 def add_favorite():
     user_id = get_jwt_identity()
