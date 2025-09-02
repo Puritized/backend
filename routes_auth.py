@@ -1,19 +1,12 @@
 from flask import Blueprint, request, jsonify
+import jwt, datetime
 from models import db, User
-import hashlib
 
 auth_bp = Blueprint("auth", __name__)
+SECRET_KEY = "your_secret_key"  # put in env in production!
 
 # ---------------------------
-# Helper: Hash Password
-# ---------------------------
-def hash_password(password: str) -> str:
-    """Hash a password using SHA-256."""
-    return hashlib.sha256(password.encode()).hexdigest()
-
-
-# ---------------------------
-# Register Route
+# Register
 # ---------------------------
 @auth_bp.route("/register", methods=["POST"])
 def register():
@@ -27,10 +20,11 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "User already exists"}), 400
 
-    # Use SHA-256 hash instead of Werkzeug
-    hashed_pw = hash_password(password)
+    # Simple hash (not Werkzeug)
+    import hashlib
+    hashed_pw = hashlib.sha256(password.encode()).hexdigest()
 
-    user = User(email=email, password_hash=hashed_pw)
+    user = User(email=email, password_hash=hashed_pw, is_premium=False)
     db.session.add(user)
     db.session.commit()
 
@@ -38,7 +32,7 @@ def register():
 
 
 # ---------------------------
-# Login Route
+# Login
 # ---------------------------
 @auth_bp.route("/login", methods=["POST"])
 def login():
@@ -47,9 +41,26 @@ def login():
     password = data.get("password")
 
     user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "Invalid credentials"}), 401
 
-    # Compare SHA-256 hashes
-    if user and user.password_hash == hash_password(password):
-        return jsonify({"message": "Login successful"}), 200
+    import hashlib
+    hashed_pw = hashlib.sha256(password.encode()).hexdigest()
 
-    return jsonify({"error": "Invalid credentials"}), 401
+    if hashed_pw != user.password_hash:
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    # Generate JWT
+    token = jwt.encode(
+        {
+            "user_id": user.id,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        },
+        SECRET_KEY,
+        algorithm="HS256"
+    )
+
+    return jsonify({
+        "token": token,
+        "is_premium": user.is_premium
+    }), 200
